@@ -10,19 +10,8 @@ type PageProps = {
   searchParams: Promise<SearchParams>;
 };
 
-export default async function DashboardPage({ searchParams }: PageProps) {
-  // 1. Parse search params for Nuqs cache
-  await searchParamsCache.parse(searchParams);
-
-  // 2. Get auth user
+async function DashboardData({ user }: { user: any }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return <div>Not authenticated</div>;
-  }
-
-  // 3. Fetch workspace ID
   const { data: member, error: memberError } = await supabase
     .from('workspace_members')
     .select('workspace_id')
@@ -38,6 +27,36 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   const workspaceId = member.workspace_id;
+
+  return (
+    <>
+      <Suspense fallback={<div className="h-32 bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse mb-6"></div>}>
+        <DashboardStats workspaceId={workspaceId} />
+      </Suspense>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Latest Leads Table</h3>
+        </div>
+        <Suspense fallback={<div className="h-96 bg-gray-50 animate-pulse"></div>}>
+          <LeadsTable workspaceId={workspaceId} />
+        </Suspense>
+      </div>
+    </>
+  );
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
+  // 1. Parse search params for Nuqs cache
+  await searchParamsCache.parse(searchParams);
+
+  // 2. Get auth user
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <div>Not authenticated</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -108,18 +127,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <Suspense fallback={<div className="h-32 bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse mb-6"></div>}>
-        <DashboardStats workspaceId={workspaceId} />
-      </Suspense>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Latest Leads Table</h3>
+      <Suspense fallback={
+        <div className="space-y-6">
+          <div className="h-32 bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse"></div>
+          <div className="h-96 bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse"></div>
         </div>
-        <Suspense fallback={<div className="h-96 bg-gray-50 animate-pulse"></div>}>
-          <LeadsTable workspaceId={workspaceId} />
-        </Suspense>
-      </div>
+      }>
+        <DashboardData user={user} />
+      </Suspense>
     </div>
   );
 }
