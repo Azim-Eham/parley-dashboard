@@ -1,5 +1,7 @@
 allowBuilds:
   - esbuild
+  - unrs-resolver
+  - sharp
 minimumReleaseAgeExclude:
   - '@next/env@16.4.0'
   - '@next/eslint-plugin-next@16.4.0'
